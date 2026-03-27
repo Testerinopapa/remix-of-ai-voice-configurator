@@ -295,7 +295,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
     clearConnectTimeout();
     clearStreamReadyTimeout();
     isReadyToStreamRef.current = false;
-    isEncodingAudioRef.current = false;
+    
     processorRef.current?.disconnect();
     sourceRef.current?.disconnect();
     audioContextRef.current?.close();
