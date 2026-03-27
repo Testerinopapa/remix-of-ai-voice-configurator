@@ -24,9 +24,26 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const nextPlayTimeRef = useRef<number>(0);
+  const connectTimeoutRef = useRef<number | null>(null);
 
   const addLog = useCallback((message: string, type: LogEntry["type"] = "info") => {
     setLogs((prev) => [...prev, { timestamp: new Date(), message, type }]);
+  }, []);
+
+  const clearConnectTimeout = useCallback(() => {
+    if (connectTimeoutRef.current !== null) {
+      window.clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
+  }, []);
+
+  const describeCloseEvent = useCallback((event: CloseEvent) => {
+    return `WebSocket closed (code: ${event.code}, reason: ${event.reason || "none"}, clean: ${event.wasClean})`;
+  }, []);
+
+  const describeErrorEvent = useCallback((event: Event) => {
+    const targetState = event.target instanceof WebSocket ? event.target.readyState : "unknown";
+    return `WebSocket error (readyState: ${targetState})`;
   }, []);
 
   const playAudioChunk = useCallback((base64Data: string) => {
@@ -81,17 +98,29 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
       const audioCtx = new AudioContext({ sampleRate: 16000 });
       audioContextRef.current = audioCtx;
 
-      // Build WebSocket URL to edge function
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID
-        || import.meta.env.VITE_SUPABASE_URL?.replace("https://", "").split(".")[0]
-        || "";
-      const wsUrl = `wss://${projectId}.supabase.co/functions/v1/gemini-ws`;
+      // Build WebSocket URL to edge function from configured backend URL
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+      if (!baseUrl) {
+        throw new Error("Backend URL is missing");
+      }
+      const wsUrl = `${baseUrl
+        .replace(/^https:\/\//, "wss://")
+        .replace(/^http:\/\//, "ws://")}/functions/v1/gemini-ws`;
 
       addLog(`Connecting to proxy: ${wsUrl}`);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
+      connectTimeoutRef.current = window.setTimeout(() => {
+        if (ws.readyState === WebSocket.CONNECTING) {
+          addLog("Connection Timed Out", "error");
+          ws.close(4000, "Connection timed out");
+          setStatus("disconnected");
+        }
+      }, 5000);
+
       ws.onopen = () => {
+        clearConnectTimeout();
         addLog("WebSocket connected, waiting for proxy…");
       };
 
@@ -164,19 +193,22 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
       };
 
       ws.onerror = () => {
-        addLog("WebSocket error", "error");
+        clearConnectTimeout();
+        addLog(describeErrorEvent(event), "error");
         setStatus("disconnected");
       };
 
-      ws.onclose = () => {
-        addLog("WebSocket disconnected");
+      ws.onclose = (event) => {
+        clearConnectTimeout();
+        addLog(describeCloseEvent(event), event.code === 1000 ? "info" : "error");
         setStatus("disconnected");
       };
     } catch (err: any) {
+      clearConnectTimeout();
       addLog(`Error: ${err.message}`, "error");
       setStatus("disconnected");
     }
-  }, [status, model, systemInstructions, addLog, playAudioChunk]);
+  }, [status, model, systemInstructions, addLog, playAudioChunk, clearConnectTimeout, describeCloseEvent, describeErrorEvent]);
 
   const startAudioCapture = (
     audioCtx: AudioContext,
@@ -228,6 +260,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
   };
 
   const stop = useCallback(() => {
+    clearConnectTimeout();
     processorRef.current?.disconnect();
     sourceRef.current?.disconnect();
     audioContextRef.current?.close();
@@ -246,7 +279,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
 
     setStatus("disconnected");
     addLog("Conversation ended");
-  }, [addLog]);
+  }, [addLog, clearConnectTimeout]);
 
   return { status, logs, start, stop };
 }
