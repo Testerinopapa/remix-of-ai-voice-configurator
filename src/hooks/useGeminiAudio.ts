@@ -128,6 +128,16 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
         try {
           const data = JSON.parse(event.data);
 
+          // Log a summary of every incoming message for debugging
+          const msgKeys = Object.keys(data).join(", ");
+          addLog(`[WS ←] keys: ${msgKeys}${data.type ? ` | type=${data.type}` : ""}`, "info");
+
+          // Proxy error from backend
+          if (data.type === "proxy_error") {
+            addLog(`[Proxy Error] ${data.message} (code: ${data.code})`, "error");
+            return;
+          }
+
           // Proxy ready → send setup message
           if (data.type === "proxy_ready") {
             addLog("Proxy ready, sending setup…");
@@ -152,26 +162,33 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
               },
             };
             ws.send(JSON.stringify(setupMsg));
+            addLog(`[WS →] Sent setup for model: models/${model}`);
             return;
           }
 
           // Error from proxy
           if (data.type === "error") {
-            addLog(`Error: ${data.message}`, "error");
+            addLog(`[Proxy] Error: ${data.message}`, "error");
             return;
           }
 
           // Gemini closed
           if (data.type === "gemini_closed") {
-            addLog(`Gemini closed: ${data.reason || data.code}`, "error");
+            addLog(`[Gemini] Closed: code=${data.code} reason=${data.reason || "none"}`, "error");
             return;
           }
 
           // Setup complete from Gemini
           if (data.setupComplete) {
-            addLog("Gemini setup complete — start speaking!");
+            addLog("[Gemini] Setup Complete received — start speaking!", "info");
             setStatus("listening");
             startAudioCapture(audioCtx, stream, ws);
+            return;
+          }
+
+          // Gemini error payload
+          if (data.error) {
+            addLog(`[Gemini Error] ${JSON.stringify(data.error)}`, "error");
             return;
           }
 
@@ -187,8 +204,8 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
           if (data?.serverContent?.turnComplete) {
             addLog("Agent turn complete");
           }
-        } catch {
-          // Non-JSON message, ignore
+        } catch (parseErr) {
+          addLog(`[WS ←] Non-JSON message (${typeof event.data}, len=${String(event.data).length})`, "info");
         }
       };
 

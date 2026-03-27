@@ -58,16 +58,16 @@ Deno.serve((req) => {
     geminiSocket.onerror = (event) => {
       console.error("[proxy] Gemini WS error:", event);
       if (clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.send(JSON.stringify({ type: "error", message: "Gemini connection error" }));
-        clientSocket.close(1011, "Gemini connection error");
+        clientSocket.send(JSON.stringify({ type: "proxy_error", message: "Google API connection error", code: 1011 }));
+        clientSocket.close(1011, "Google API connection error");
       }
     };
 
     geminiSocket.onclose = (event) => {
       console.log("[proxy] Gemini WS closed:", event.code, event.reason);
       if (clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.send(JSON.stringify({ type: "gemini_closed", code: event.code, reason: event.reason }));
-        clientSocket.close();
+        clientSocket.send(JSON.stringify({ type: "proxy_error", message: "Google API connection closed", code: event.code, reason: event.reason }));
+        clientSocket.close(event.code === 1000 ? 1000 : 1011, "Gemini upstream closed");
       }
     };
   };
