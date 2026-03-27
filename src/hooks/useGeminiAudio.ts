@@ -101,7 +101,8 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
 
         try {
           const data = JSON.parse(textData);
-
+          const parsedKeys = Object.keys(data).join(", ");
+          addLog(`[WS ←] Parsed JSON keys: ${parsedKeys}`);
           if (data.type === "proxy_error") {
             addLog(`[Proxy Error] ${data.message} (code: ${data.code})`, "error");
             return;
@@ -113,7 +114,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
               setup: {
                 model: `models/${model}`,
                 generationConfig: {
-                  responseModalities: ["TEXT"],
+                  responseModalities: ["AUDIO"],
                 },
                 ...(systemInstructions.trim()
                   ? {
