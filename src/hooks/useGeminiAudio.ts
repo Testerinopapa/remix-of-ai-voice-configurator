@@ -192,7 +192,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
         }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (event) => {
         clearConnectTimeout();
         addLog(describeErrorEvent(event), "error");
         setStatus("disconnected");
