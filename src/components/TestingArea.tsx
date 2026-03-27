@@ -1,10 +1,17 @@
-import { Mic, Radio } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Mic, MicOff, Radio } from "lucide-react";
+import type { ConnectionStatus } from "@/hooks/useGeminiAudio";
 
-type ConnectionStatus = "disconnected" | "connecting" | "listening";
+interface LogEntry {
+  timestamp: Date;
+  message: string;
+  type: "info" | "error" | "audio";
+}
 
 interface TestingAreaProps {
   status: ConnectionStatus;
+  logs: LogEntry[];
+  onStart: () => void;
+  onStop: () => void;
 }
 
 const statusConfig: Record<ConnectionStatus, { label: string; color: string; dotClass: string }> = {
@@ -13,15 +20,22 @@ const statusConfig: Record<ConnectionStatus, { label: string; color: string; dot
   listening: { label: "Listening / Speaking", color: "text-primary", dotClass: "bg-primary animate-pulse" },
 };
 
-const TestingArea = ({ status }: TestingAreaProps) => {
-  const { toast } = useToast();
-  const { label, color, dotClass } = statusConfig[status];
+const logTypeColors: Record<string, string> = {
+  info: "text-muted-foreground",
+  error: "text-destructive",
+  audio: "text-primary",
+};
 
-  const handleStart = () => {
-    toast({
-      title: "Ready to connect",
-      description: "Backend API key configured. Ready to connect to Gemini.",
-    });
+const TestingArea = ({ status, logs, onStart, onStop }: TestingAreaProps) => {
+  const { label, color, dotClass } = statusConfig[status];
+  const isActive = status !== "disconnected";
+
+  const handleClick = () => {
+    if (isActive) {
+      onStop();
+    } else {
+      onStart();
+    }
   };
 
   return (
@@ -34,12 +48,20 @@ const TestingArea = ({ status }: TestingAreaProps) => {
 
       {/* Push to Talk */}
       <button
-        onClick={handleStart}
-        className="group relative h-36 w-36 rounded-full bg-secondary border-2 border-border flex items-center justify-center transition-all hover:border-primary hover:glow-primary active:scale-95"
+        onClick={handleClick}
+        className={`group relative h-36 w-36 rounded-full border-2 flex items-center justify-center transition-all active:scale-95 ${
+          isActive
+            ? "bg-destructive/20 border-destructive glow-primary-strong"
+            : "bg-secondary border-border hover:border-primary hover:glow-primary"
+        }`}
       >
-        <Mic className="h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
+        {isActive ? (
+          <MicOff className="h-12 w-12 text-destructive" />
+        ) : (
+          <Mic className="h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
+        )}
         <span className="absolute -bottom-8 text-xs text-muted-foreground font-medium">
-          Start Conversation
+          {isActive ? "Stop Conversation" : "Start Conversation"}
         </span>
       </button>
 
@@ -49,8 +71,19 @@ const TestingArea = ({ status }: TestingAreaProps) => {
           <Radio className="h-4 w-4" />
           <span className="text-xs font-semibold uppercase tracking-wider">Activity Log</span>
         </div>
-        <div className="rounded-lg bg-muted/50 border border-border p-4 h-48 overflow-y-auto font-mono text-xs text-muted-foreground">
-          <p className="opacity-50">Waiting for connection…</p>
+        <div className="rounded-lg bg-muted/50 border border-border p-4 h-48 overflow-y-auto font-mono text-xs space-y-1">
+          {logs.length === 0 ? (
+            <p className="text-muted-foreground opacity-50">Waiting for connection…</p>
+          ) : (
+            logs.map((entry, i) => (
+              <p key={i} className={logTypeColors[entry.type] || "text-muted-foreground"}>
+                <span className="opacity-50">
+                  [{entry.timestamp.toLocaleTimeString()}]
+                </span>{" "}
+                {entry.message}
+              </p>
+            ))
+          )}
         </div>
       </div>
     </main>
