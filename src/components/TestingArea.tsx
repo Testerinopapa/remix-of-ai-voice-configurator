@@ -16,6 +16,8 @@ interface TestingAreaProps {
   onStart: () => void;
   onStop: () => void;
   onSendTextTest: () => void;
+  isMicMuted: boolean;
+  onToggleMic: () => void;
 }
 
 const statusConfig: Record<ConnectionStatus, { label: string; color: string; dotClass: string }> = {
