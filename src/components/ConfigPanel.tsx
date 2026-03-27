@@ -37,16 +37,6 @@ const ConfigPanel = ({ onApply }: ConfigPanelProps) => {
         </span>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="model-id" className="text-sm text-muted-foreground">Model ID</Label>
-        <Input
-          id="model-id"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          className="bg-muted border-border font-mono text-sm"
-        />
-      </div>
-
       <div className="space-y-2 flex-1 flex flex-col">
         <Label htmlFor="system-instructions" className="text-sm text-muted-foreground">
           Knowledge Base / System Instructions
