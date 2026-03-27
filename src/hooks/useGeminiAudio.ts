@@ -254,20 +254,9 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
 
       const float32 = e.inputBuffer.getChannelData(0);
 
-      // Convert float32 → int16 PCM
-      const int16 = new Int16Array(float32.length);
-      for (let i = 0; i < float32.length; i++) {
-        const s = Math.max(-1, Math.min(1, float32[i]));
-        int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-      }
-
-      // Convert to base64
-      const bytes = new Uint8Array(int16.buffer);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
+      // Convert Float32 → 16-bit PCM via DataView for correct byte layout
+      const pcmBuffer = floatTo16BitPCM(float32);
+      const base64 = arrayBufferToBase64(pcmBuffer);
 
       const msg = {
         realtimeInput: {
