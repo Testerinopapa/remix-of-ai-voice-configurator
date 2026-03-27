@@ -47,6 +47,7 @@ interface UseGeminiAudioOptions {
 export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOptions) {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [isMicMuted, setIsMicMuted] = useState(true);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -59,6 +60,10 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
   const streamReadyTimeoutRef = useRef<number | null>(null);
   const isReadyToStreamRef = useRef(false);
   const isEncodingAudioRef = useRef(false);
+  const isMicMutedRef = useRef(true);
+
+  // Keep ref in sync with state
+  isMicMutedRef.current = isMicMuted;
 
   const addLog = useCallback((message: string, type: LogEntry["type"] = "info") => {
     setLogs((prev) => [...prev, { timestamp: new Date(), message, type }]);
@@ -329,7 +334,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
           },
         };
 
-        if (ws.readyState === WebSocket.OPEN) {
+        if (!isMicMutedRef.current && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify(payload));
         }
       } finally {
@@ -379,7 +384,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
         turns: [
           {
             role: "user",
-            parts: [{ text: "Hello, can you hear me? Please say yes." }],
+            parts: [{ text: "Hello, this is a text isolation test. If you hear this, please say 'Test successful'." }],
           },
         ],
         turnComplete: true,
@@ -390,5 +395,5 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
     addLog("Sent text isolation test", "info");
   }, [addLog, status]);
 
-  return { status, logs, start, stop, sendTextTest };
+  return { status, logs, start, stop, sendTextTest, isMicMuted, setIsMicMuted };
 }

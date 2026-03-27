@@ -1,5 +1,7 @@
 import { Mic, MicOff, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import type { ConnectionStatus } from "@/hooks/useGeminiAudio";
 
 interface LogEntry {
@@ -14,6 +16,8 @@ interface TestingAreaProps {
   onStart: () => void;
   onStop: () => void;
   onSendTextTest: () => void;
+  isMicMuted: boolean;
+  onToggleMic: () => void;
 }
 
 const statusConfig: Record<ConnectionStatus, { label: string; color: string; dotClass: string }> = {
@@ -28,7 +32,7 @@ const logTypeColors: Record<string, string> = {
   audio: "text-primary",
 };
 
-const TestingArea = ({ status, logs, onStart, onStop, onSendTextTest }: TestingAreaProps) => {
+const TestingArea = ({ status, logs, onStart, onStop, onSendTextTest, isMicMuted, onToggleMic }: TestingAreaProps) => {
   const { label, color, dotClass } = statusConfig[status];
   const isActive = status !== "disconnected";
   const canSendTextTest = status === "listening";
@@ -69,16 +73,24 @@ const TestingArea = ({ status, logs, onStart, onStop, onSendTextTest }: TestingA
           </span>
         </button>
 
-        <Button
-          type="button"
-          variant="secondary"
-          size="lg"
-          onClick={onSendTextTest}
-          disabled={!canSendTextTest}
-          className="min-w-40"
-        >
-          Send Text Test
-        </Button>
+        <div className="flex flex-col gap-3 items-center">
+          <Button
+            type="button"
+            variant="secondary"
+            size="lg"
+            onClick={onSendTextTest}
+            disabled={!canSendTextTest}
+            className="min-w-40"
+          >
+            Send Text Test
+          </Button>
+          <div className="flex items-center gap-2">
+            <Switch id="mic-mute" checked={!isMicMuted} onCheckedChange={onToggleMic} />
+            <Label htmlFor="mic-mute" className="text-xs text-muted-foreground">
+              {isMicMuted ? "Mic Muted (no audio sent)" : "Mic Live"}
+            </Label>
+          </div>
+        </div>
       </div>
 
       {/* Log area */}
