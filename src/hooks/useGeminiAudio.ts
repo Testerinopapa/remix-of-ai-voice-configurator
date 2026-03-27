@@ -39,7 +39,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
   const connectTimeoutRef = useRef<number | null>(null);
   const streamReadyTimeoutRef = useRef<number | null>(null);
   const isReadyToStreamRef = useRef(false);
-  const isEncodingAudioRef = useRef(false);
+  
 
   const addLog = useCallback((message: string, type: LogEntry["type"] = "info") => {
     setLogs((prev) => [...prev, { timestamp: new Date(), message, type }]);
