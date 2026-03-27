@@ -334,7 +334,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
           },
         };
 
-        if (!isMicMuted && ws.readyState === WebSocket.OPEN) {
+        if (!isMicMutedRef.current && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify(payload));
         }
       } finally {
