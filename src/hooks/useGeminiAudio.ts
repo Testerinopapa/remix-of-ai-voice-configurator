@@ -47,6 +47,7 @@ interface UseGeminiAudioOptions {
 export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOptions) {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [isMicMuted, setIsMicMuted] = useState(true);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
