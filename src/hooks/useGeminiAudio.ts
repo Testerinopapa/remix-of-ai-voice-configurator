@@ -134,14 +134,15 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
       if (ws.readyState !== WebSocket.OPEN) return;
       if (!isReadyToStreamRef.current) return;
 
-      const float32 = e.inputBuffer.getChannelData(0);
+      const rawFloat32 = e.inputBuffer.getChannelData(0);
       let isSilent = true;
-      for (let i = 0; i < float32.length; i++) {
-        if (float32[i] !== 0) { isSilent = false; break; }
+      for (let i = 0; i < rawFloat32.length; i++) {
+        if (rawFloat32[i] !== 0) { isSilent = false; break; }
       }
       if (isSilent) return;
 
-      const pcmBuffer = floatTo16BitPCM(float32);
+      const resampled = resampleTo16kHz(rawFloat32, audioCtx.sampleRate);
+      const pcmBuffer = floatTo16BitPCM(resampled);
       const base64Data = arrayBufferToBase64(pcmBuffer);
 
       if (base64Data) {
