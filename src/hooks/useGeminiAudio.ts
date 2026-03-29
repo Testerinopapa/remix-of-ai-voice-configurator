@@ -176,7 +176,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
       streamRef.current = stream;
       addLog("Microphone access granted");
 
-      const audioCtx = new AudioContext({ sampleRate: 16000 });
+      const audioCtx = new AudioContext();
       audioContextRef.current = audioCtx;
 
       const baseUrl = import.meta.env.VITE_SUPABASE_URL || "";
