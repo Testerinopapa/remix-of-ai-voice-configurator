@@ -118,7 +118,7 @@ const ConfigSection = ({ onApply }: ConfigSectionProps) => {
   const activePersona = PERSONA_OPTIONS.find((p) => p.value === persona)!;
 
   return (
-    <Dialog open={open} onOpenChange={(val) => { if (hasApplied || val) setOpen(val); }}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
