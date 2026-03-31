@@ -89,7 +89,6 @@ const ConfigSection = ({ onApply }: ConfigSectionProps) => {
   const [voiceName, setVoiceName] = useState("Kore");
   const [persona, setPersona] = useState("professional");
   const [open, setOpen] = useState(false);
-  
   const { toast } = useToast();
 
   const handlePersonaChange = (value: string) => {
@@ -129,7 +128,7 @@ const ConfigSection = ({ onApply }: ConfigSectionProps) => {
           Configure
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[540px] max-h-[85vh] overflow-y-auto bg-card border-border p-0 animate-dialog-slide-down-fade">
+      <DialogContent className="sm:max-w-[540px] max-h-[85vh] overflow-y-auto bg-card border-border p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-xl font-bold text-foreground">
             Configure Your AI Assistant
