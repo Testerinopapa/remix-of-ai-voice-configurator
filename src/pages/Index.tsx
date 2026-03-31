@@ -7,11 +7,13 @@ const Index = () => {
   const [config, setConfig] = useState({
     model: "gemini-3.1-flash-live-preview",
     systemInstructions: "",
+    voiceName: "Kore",
   });
 
   const { status, logs, start, stop } = useGeminiAudio({
     model: config.model,
     systemInstructions: config.systemInstructions,
+    voiceName: config.voiceName,
   });
 
   return (
