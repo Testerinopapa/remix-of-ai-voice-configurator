@@ -6,17 +6,51 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 interface ConfigSectionProps {
-  onApply: (config: { model: string; systemInstructions: string }) => void;
+  onApply: (config: { model: string; systemInstructions: string; voiceName: string }) => void;
 }
+
+const VOICE_OPTIONS = [
+  { value: "Kore", label: "Kore", tone: "Firm" },
+  { value: "Puck", label: "Puck", tone: "Upbeat" },
+  { value: "Charon", label: "Charon", tone: "Informative" },
+  { value: "Zephyr", label: "Zephyr", tone: "Bright" },
+  { value: "Fenrir", label: "Fenrir", tone: "Excitable" },
+  { value: "Leda", label: "Leda", tone: "Youthful" },
+  { value: "Orus", label: "Orus", tone: "Firm" },
+  { value: "Aoede", label: "Aoede", tone: "Breezy" },
+  { value: "Callirrhoe", label: "Callirrhoe", tone: "Easy-going" },
+  { value: "Autonoe", label: "Autonoe", tone: "Bright" },
+  { value: "Enceladus", label: "Enceladus", tone: "Breathy" },
+  { value: "Iapetus", label: "Iapetus", tone: "Clear" },
+  { value: "Umbriel", label: "Umbriel", tone: "Easy-going" },
+  { value: "Algieba", label: "Algieba", tone: "Smooth" },
+  { value: "Despina", label: "Despina", tone: "Smooth" },
+  { value: "Erinome", label: "Erinome", tone: "Clear" },
+  { value: "Algenib", label: "Algenib", tone: "Gravelly" },
+  { value: "Rasalgethi", label: "Rasalgethi", tone: "Informative" },
+  { value: "Laomedeia", label: "Laomedeia", tone: "Upbeat" },
+  { value: "Achernar", label: "Achernar", tone: "Soft" },
+  { value: "Alnilam", label: "Alnilam", tone: "Firm" },
+  { value: "Schedar", label: "Schedar", tone: "Even" },
+  { value: "Gacrux", label: "Gacrux", tone: "Mature" },
+  { value: "Pulcherrima", label: "Pulcherrima", tone: "Forward" },
+  { value: "Achird", label: "Achird", tone: "Friendly" },
+  { value: "Zubenelgenubi", label: "Zubenelgenubi", tone: "Casual" },
+  { value: "Vindemiatrix", label: "Vindemiatrix", tone: "Gentle" },
+  { value: "Sadachbia", label: "Sadachbia", tone: "Lively" },
+  { value: "Sadaltager", label: "Sadaltager", tone: "Knowledgeable" },
+  { value: "Sulafat", label: "Sulafat", tone: "Warm" },
+];
 
 const ConfigSection = ({ onApply }: ConfigSectionProps) => {
   const [model] = useState("gemini-3.1-flash-live-preview");
   const [systemInstructions, setSystemInstructions] = useState("");
+  const [voiceName, setVoiceName] = useState("Kore");
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
   const handleApply = () => {
-    onApply({ model, systemInstructions });
+    onApply({ model, systemInstructions, voiceName });
     toast({
       title: "Settings Saved",
       description: "Your configuration has been applied.",
@@ -43,6 +77,24 @@ const ConfigSection = ({ onApply }: ConfigSectionProps) => {
             <span className="text-xs text-accent-foreground">
               API Key is securely stored on the backend.
             </span>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="voice-name" className="text-sm text-muted-foreground">
+              Voice
+            </Label>
+            <select
+              id="voice-name"
+              value={voiceName}
+              onChange={(e) => setVoiceName(e.target.value)}
+              className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground outline-none"
+            >
+              {VOICE_OPTIONS.map((voice) => (
+                <option key={voice.value} value={voice.value}>
+                  {voice.label} - {voice.tone}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">

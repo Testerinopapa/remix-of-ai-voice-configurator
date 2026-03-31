@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 
+const MIC_CAPTURE_WORKLET_URL = "/audio-worklets/mic-capture-processor.js";
+
 function resampleTo16kHz(float32Array: Float32Array, inputSampleRate: number): Float32Array {
   if (inputSampleRate === 16000) return float32Array;
   const ratio = inputSampleRate / 16000;
@@ -51,16 +53,17 @@ interface LogEntry {
 interface UseGeminiAudioOptions {
   model: string;
   systemInstructions: string;
+  voiceName: string;
 }
 
-export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOptions) {
+export function useGeminiAudio({ model, systemInstructions, voiceName }: UseGeminiAudioOptions) {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const processorRef = useRef<AudioWorkletNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const nextPlayTimeRef = useRef<number>(0);
@@ -123,18 +126,37 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
     }
   }, []);
 
-  const startAudioCapture = useCallback((audioCtx: AudioContext, stream: MediaStream, ws: WebSocket) => {
+  const startAudioCapture = useCallback(async (audioCtx: AudioContext, stream: MediaStream, ws: WebSocket) => {
+    if (!("audioWorklet" in audioCtx)) {
+      throw new Error("AudioWorklet is not available in this browser.");
+    }
+
+    await audioCtx.audioWorklet.addModule(MIC_CAPTURE_WORKLET_URL);
+
     const source = audioCtx.createMediaStreamSource(stream);
     sourceRef.current = source;
 
-    const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+    const processor = new AudioWorkletNode(audioCtx, "pcm-capture-processor", {
+      numberOfInputs: 1,
+      numberOfOutputs: 0,
+      channelCount: 1,
+      processorOptions: {
+        frameSize: 4096,
+      },
+    });
     processorRef.current = processor;
 
-    processor.onaudioprocess = (e) => {
+    processor.port.onmessage = (event) => {
       if (ws.readyState !== WebSocket.OPEN) return;
       if (!isReadyToStreamRef.current) return;
 
-      const rawFloat32 = e.inputBuffer.getChannelData(0);
+      const rawFloat32 = event.data instanceof Float32Array
+        ? event.data
+        : event.data instanceof ArrayBuffer
+          ? new Float32Array(event.data)
+          : null;
+      if (!rawFloat32) return;
+
       let isSilent = true;
       for (let i = 0; i < rawFloat32.length; i++) {
         if (rawFloat32[i] !== 0) { isSilent = false; break; }
@@ -161,7 +183,6 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
     };
 
     source.connect(processor);
-    processor.connect(audioCtx.destination);
   }, []);
 
   const start = useCallback(async () => {
@@ -249,6 +270,13 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
                 model: `models/${model}`,
                 generationConfig: {
                   responseModalities: ["AUDIO"],
+                  speechConfig: {
+                    voiceConfig: {
+                      prebuiltVoiceConfig: {
+                        voiceName,
+                      },
+                    },
+                  },
                 },
                 ...(systemInstructions.trim()
                   ? {
@@ -277,8 +305,15 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
 
           if (data.setupComplete) {
             addLog("[Gemini] Setup Complete received");
+            try {
+              await startAudioCapture(audioCtx, stream, ws);
+            } catch (err: any) {
+              addLog(`Error: ${err.message}`, "error");
+              ws.close(1011, "Audio capture setup failed");
+              return;
+            }
+
             setStatus("listening");
-            startAudioCapture(audioCtx, stream, ws);
             isReadyToStreamRef.current = false;
             addLog("[Mic] Stabilizing hardware for 500ms…");
             clearStreamReadyTimeout();
@@ -333,6 +368,7 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
     status,
     model,
     systemInstructions,
+    voiceName,
     addLog,
     playAudioChunk,
     clearConnectTimeout,
@@ -344,7 +380,10 @@ export function useGeminiAudio({ model, systemInstructions }: UseGeminiAudioOpti
     clearConnectTimeout();
     clearStreamReadyTimeout();
     isReadyToStreamRef.current = false;
-    processorRef.current?.disconnect();
+    if (processorRef.current) {
+      processorRef.current.port.onmessage = null;
+      processorRef.current.disconnect();
+    }
     sourceRef.current?.disconnect();
     audioContextRef.current?.close();
     playbackCtxRef.current?.close();
