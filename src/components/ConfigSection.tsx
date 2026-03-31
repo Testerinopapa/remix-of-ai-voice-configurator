@@ -113,13 +113,14 @@ const ConfigSection = ({ onApply }: ConfigSectionProps) => {
       title: "Configuration Applied",
       description: "Your settings have been saved.",
     });
+    setHasApplied(true);
     setOpen(false);
   };
 
   const activePersona = PERSONA_OPTIONS.find((p) => p.value === persona)!;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(val) => { if (hasApplied || val) setOpen(val); }}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
