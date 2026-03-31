@@ -52,6 +52,10 @@ export default {
           "50%": { boxShadow: "0 0 40px hsl(142 60% 50% / 0.5)" },
         },
         "slide-down-fade": {
+          "0%": { opacity: "0", transform: "translateY(-12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "dialog-slide-down-fade": {
           "0%": { opacity: "0", transform: "translate(-50%, calc(-50% - 12px))" },
           "100%": { opacity: "1", transform: "translate(-50%, -50%)" },
         },
@@ -60,7 +64,8 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
-        "slide-down-fade": "slide-down-fade 2s ease-in-out",
+        "slide-down-fade": "slide-down-fade 0.5s ease-out",
+        "dialog-slide-down-fade": "dialog-slide-down-fade 0.5s ease-out",
       },
     },
   },
