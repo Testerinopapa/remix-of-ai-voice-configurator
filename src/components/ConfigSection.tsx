@@ -88,6 +88,8 @@ const ConfigSection = ({ onApply }: ConfigSectionProps) => {
   const [systemInstructions, setSystemInstructions] = useState("");
   const [voiceName, setVoiceName] = useState("Kore");
   const [persona, setPersona] = useState("professional");
+  const [open, setOpen] = useState(true);
+  const [hasApplied, setHasApplied] = useState(false);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
