@@ -87,10 +87,10 @@ const TestingArea = ({
         <span className={`text-sm font-medium ${color}`}>{label}</span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col items-center gap-3">
         <button
           onClick={handleClick}
-          className={`group relative flex h-28 w-28 items-center justify-center rounded-full border-2 transition-all active:scale-95 sm:h-36 sm:w-36 ${
+          className={`group flex h-28 w-28 items-center justify-center rounded-full border-2 transition-all active:scale-95 sm:h-36 sm:w-36 ${
             isActive
               ? "border-destructive bg-destructive/20"
               : "border-border bg-secondary hover:border-primary"
@@ -101,10 +101,10 @@ const TestingArea = ({
           ) : (
             <Mic className="h-12 w-12 text-muted-foreground transition-colors group-hover:text-primary" />
           )}
-          <span className="absolute -bottom-7 text-xs font-medium text-muted-foreground sm:-bottom-8">
-            {isActive ? "Stop Conversation" : primaryActionLabel}
-          </span>
         </button>
+        <span className="text-xs font-medium text-muted-foreground">
+          {isActive ? "Stop Conversation" : primaryActionLabel}
+        </span>
       </div>
 
       <section className="grid w-full max-w-2xl gap-3 sm:grid-cols-3">
