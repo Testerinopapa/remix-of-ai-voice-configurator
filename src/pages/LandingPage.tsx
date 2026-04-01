@@ -192,9 +192,6 @@ const LandingPage = () => {
                 </span>
                 <h3 className="mb-2 text-xl font-bold">{step.title}</h3>
                 <p className="mb-4 text-sm text-muted-foreground">{step.description}</p>
-                <pre className="overflow-x-auto rounded-lg bg-background p-3 text-xs text-muted-foreground font-mono">
-                  {step.code}
-                </pre>
               </div>
             ))}
           </div>
