@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { useGeminiAudio } from "@/hooks/useGeminiAudio";
 import TestingArea from "@/components/TestingArea";
 import ConfigSection from "@/components/ConfigSection";
+import { Button } from "@/components/ui/button";
 
 const Demo = () => {
   const [config, setConfig] = useState({
@@ -17,7 +20,15 @@ const Demo = () => {
   });
 
   return (
-    <div className="flex min-h-dvh w-full flex-col overflow-x-hidden animate-slide-down-fade">
+    <div className="relative flex min-h-dvh w-full flex-col overflow-x-hidden animate-slide-down-fade">
+      <div className="absolute top-4 left-4 z-10">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/">
+            <ArrowLeft className="mr-1" />
+            Back
+          </Link>
+        </Button>
+      </div>
       <TestingArea
         status={status}
         logs={logs}
