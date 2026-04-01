@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { useGeminiAudio } from "@/hooks/useGeminiAudio";
 import TestingArea from "@/components/TestingArea";
 import ConfigSection from "@/components/ConfigSection";
+import { Button } from "@/components/ui/button";
 
 const Demo = () => {
   const [config, setConfig] = useState({
