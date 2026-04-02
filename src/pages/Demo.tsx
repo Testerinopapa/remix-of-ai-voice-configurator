@@ -24,10 +24,19 @@ const Demo = () => {
   const [splashError, setSplashError] = useState<string | undefined>();
   const autoStartedRef = useRef(false);
 
-  // Auto-start the session on mount
+  // Warm up the edge function container and auto-start the session
   useEffect(() => {
     if (autoStartedRef.current) return;
     autoStartedRef.current = true;
+
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+    const warmUpUrl = `${baseUrl}/functions/v1/gemini-ws`;
+
+    // Fire a throwaway HTTP request to wake the container, then start
+    if (warmUpUrl && baseUrl) {
+      fetch(warmUpUrl, { method: "OPTIONS" }).catch(() => {});
+    }
+
     start();
   }, [start]);
 
