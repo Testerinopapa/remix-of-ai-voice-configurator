@@ -549,20 +549,6 @@ export function useGeminiAudio({ model, systemInstructions, voiceName }: UseGemi
       // Now wait for the WS to be open (likely already is by now)
       await wsOpenPromise;
 
-      connectTimeoutRef.current = window.setTimeout(() => {
-        if (ws.readyState === WebSocket.CONNECTING) {
-          addLog("Connection timed out", "error");
-          setSpeakerIndicator("idle", "Speaker output is idle until the connection is restored.");
-          setReconnectIndicator("available", "Connection timed out. Try reconnecting.");
-          ws.close(4000, "Connection timed out");
-          setStatus("disconnected");
-        }
-      }, 5000);
-
-      ws.onopen = () => {
-        clearConnectTimeout();
-        addLog("WebSocket connected, waiting for proxy...");
-      };
 
       ws.onmessage = async (event) => {
         let textData: string;
