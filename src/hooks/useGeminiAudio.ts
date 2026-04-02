@@ -486,6 +486,7 @@ export function useGeminiAudio({ model, systemInstructions, voiceName }: UseGemi
         throw new Error(message);
       }
 
+      // Build the WebSocket URL early so we can start connecting in parallel
       const configuredProxyUrl = import.meta.env.VITE_GEMINI_WS_URL || "";
       const baseUrl = import.meta.env.VITE_SUPABASE_URL || "";
       const targetUrl = configuredProxyUrl || `${baseUrl}/functions/v1/gemini-ws`;
@@ -495,30 +496,45 @@ export function useGeminiAudio({ model, systemInstructions, voiceName }: UseGemi
         .replace(/^https:\/\//, "wss://")
         .replace(/^http:\/\//, "ws://");
 
-      // Start WebSocket connection, mic access, and playback context in parallel
+      // Kick off the WebSocket connection immediately so it connects during mic/audio setup
       addLog(`Connecting to proxy: ${wsUrl}`);
       const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
-      const micPromise = mediaDevices.getUserMedia({
+      // Promise that resolves when WS is open, or rejects on error/timeout
+      const wsOpenPromise = new Promise<void>((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          reject(new Error("Connection timed out"));
+          ws.close(4000, "Connection timed out");
+        }, 5000);
+
+        ws.addEventListener("open", () => {
+          window.clearTimeout(timeout);
+          addLog("WebSocket connected, waiting for proxy...");
+          resolve();
+        }, { once: true });
+
+        ws.addEventListener("error", () => {
+          window.clearTimeout(timeout);
+          reject(new Error("WebSocket connection failed"));
+        }, { once: true });
+      });
+
+      // Run mic access, playback setup, and WebSocket open in parallel
+      const stream = await mediaDevices.getUserMedia({
         audio: getRequestedAudioConstraints(mediaDevices),
-      }).then((stream) => {
-        streamRef.current = stream;
-        setPermissionIndicator("granted", "Microphone access granted.");
-        addLog("Microphone access granted");
-        return stream;
       });
+      streamRef.current = stream;
+      setPermissionIndicator("granted", "Microphone access granted.");
+      addLog("Microphone access granted");
 
-      const playbackPromise = ensurePlaybackContext().then((ctx) => {
-        if (ctx.state !== "running") {
-          setSpeakerIndicator("blocked", "Speaker output is still suspended. Start again from a direct tap or disable silent mode.");
-          throw new Error("Speaker output is still blocked after setup.");
-        }
-        setSpeakerIndicator("ready", "Speaker output is ready for AI responses.");
-        addLog("Playback context ready");
-        return ctx;
-      });
-
-      const [stream] = await Promise.all([micPromise, playbackPromise]);
+      const playbackContext = await ensurePlaybackContext();
+      if (playbackContext.state !== "running") {
+        setSpeakerIndicator("blocked", "Speaker output is still suspended. Start again from a direct tap or disable silent mode.");
+        throw new Error("Speaker output is still blocked after setup.");
+      }
+      setSpeakerIndicator("ready", "Speaker output is ready for AI responses.");
+      addLog("Playback context ready");
 
       const inputContext = new AudioContext();
       if (inputContext.state === "suspended") {
@@ -529,22 +545,10 @@ export function useGeminiAudio({ model, systemInstructions, voiceName }: UseGemi
 
       const captureFrameSize = getPreferredCaptureFrameSize();
       addLog(`Capture frame size: ${captureFrameSize}`);
-      wsRef.current = ws;
 
-      connectTimeoutRef.current = window.setTimeout(() => {
-        if (ws.readyState === WebSocket.CONNECTING) {
-          addLog("Connection timed out", "error");
-          setSpeakerIndicator("idle", "Speaker output is idle until the connection is restored.");
-          setReconnectIndicator("available", "Connection timed out. Try reconnecting.");
-          ws.close(4000, "Connection timed out");
-          setStatus("disconnected");
-        }
-      }, 5000);
+      // Now wait for the WS to be open (likely already is by now)
+      await wsOpenPromise;
 
-      ws.onopen = () => {
-        clearConnectTimeout();
-        addLog("WebSocket connected, waiting for proxy...");
-      };
 
       ws.onmessage = async (event) => {
         let textData: string;
